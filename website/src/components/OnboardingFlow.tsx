@@ -274,7 +274,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   Pick {buddyName}&apos;s starter look
                 </h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Choose one complimentary basic accessory right off the bat. Everything renders live at 128×64.
+                  Choose one complimentary accessory right off the bat. You're welcome.
                 </p>
               </div>
               {syncedData && (
