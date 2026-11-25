@@ -215,7 +215,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   id="cf-handle"
                   value={cfHandle}
                   onChange={(e) => setCfHandle(e.target.value)}
-                  placeholder="e.g. tourist"
+                  placeholder="e.g. crmlcstrd"
                   maxLength={48}
                   autoFocus
                 />
@@ -229,7 +229,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   id="gh-handle"
                   value={ghHandle}
                   onChange={(e) => setGhHandle(e.target.value)}
-                  placeholder="e.g. octocat"
+                  placeholder="e.g. priyze"
                   maxLength={48}
                 />
                 <p className="font-mono text-[11px] text-muted-foreground">Each push: 15 codocoins</p>
