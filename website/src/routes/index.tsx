@@ -228,7 +228,7 @@ function ShopPage() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Accessory Shop</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                128×64 OLED eye &amp; mouth gear unlocked as {state.buddyName} levels up to 50.
+                Gear you can unlock as {state.buddyName} levels up to 50.
               </p>
             </div>
 
