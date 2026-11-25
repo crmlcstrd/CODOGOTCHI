@@ -169,7 +169,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   id="buddy-name"
                   value={buddyName}
                   onChange={(e) => setBuddyName(e.target.value)}
-                  placeholder="e.g. Bit"
+                  placeholder="e.g. Dhruv"
                   maxLength={32}
                 />
               </div>
