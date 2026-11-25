@@ -6,7 +6,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 2,
     name: "Round Blush",
     slot: "mouth",
-    description: "Soft pixel cheek ovals perched right beneath the eyes.",
+    description: "Robots can't feel emotions, except for this one.",
     unlockLevel: 0,
     price: 25,
     isStarter: true,
@@ -26,7 +26,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 3,
     name: "Pixel Mustache",
     slot: "mouth",
-    description: "Dapper monochrome mustache sitting cleanly above the mouth.",
+    description: "Dapper little 'stache.",
     unlockLevel: 0,
     price: 30,
     isStarter: true,
@@ -46,7 +46,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 5,
     name: "Beauty Mark",
     slot: "mouth",
-    description: "Minimalist 3×3 pixel cheek mole on the lower right cheek.",
+    description: "Little sparkle on your Codo's cheek.",
     unlockLevel: 3,
     price: 45,
     draw(c, f) {
@@ -61,7 +61,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 6,
     name: "Anime Blush",
     slot: "mouth",
-    description: "Classic triple diagonal slash blush marks under both eyes.",
+    description: "E-eto... Ano.....",
     unlockLevel: 3,
     price: 55,
     draw(c, f) {
@@ -80,7 +80,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 9,
     name: "Pixel Freckles",
     slot: "mouth",
-    description: "Warm cluster of tiny 1-bit pixel freckles across both cheeks.",
+    description: "It really is white girl summer!",
     unlockLevel: 6,
     price: 75,
     draw(c, f) {
@@ -106,7 +106,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 10,
     name: "Cat Whiskers",
     slot: "mouth",
-    description: "Three crisp pixel whiskers fanning off each side of the cheeks.",
+    description: "Nya :3",
     unlockLevel: 6,
     price: 85,
     draw(c, f) {
@@ -126,7 +126,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 13,
     name: "Cheek Bandage",
     slot: "mouth",
-    description: "Playful pixel adhesive strip taped cleanly across the right cheek.",
+    description: "Owie.",
     unlockLevel: 10,
     price: 110,
     draw(c, f) {
@@ -146,7 +146,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 14,
     name: "Handlebar Stache",
     slot: "mouth",
-    description: "Victorian curled handlebar mustache with upturned tips.",
+    description: "Ew. Please don't use this.",
     unlockLevel: 14,
     price: 165,
     draw(c, f) {
@@ -169,7 +169,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 16,
     name: "Pixel Fangs",
     slot: "mouth",
-    description: "Playful twin pixel fangs peeking beneath the mouth.",
+    description: "Robert Pattinson really IS everywhere.",
     unlockLevel: 14,
     price: 160,
     draw(c, f) {
@@ -184,7 +184,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 18,
     name: "Heart Cheeks",
     slot: "mouth",
-    description: "Matching mini pixel hearts stamped beneath both eyes.",
+    description: "♥ ♥ ♥ ♥",
     unlockLevel: 18,
     price: 210,
     draw(c, f) {
@@ -203,7 +203,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 21,
     name: "Pixel Goatee",
     slot: "mouth",
-    description: "Sharp minimalist triangular pixel goatee beneath the mouth.",
+    description: "Nobody looks good with a goatee. Fight me on that.",
     unlockLevel: 22,
     price: 255,
     draw(c, f) {
@@ -218,7 +218,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 23,
     name: "Sparkle Cheeks",
     slot: "mouth",
-    description: "Crisp four-point pixel star glints resting on each cheek.",
+    description: "⭐⭐⭐⭐",
     unlockLevel: 26,
     price: 315,
     draw(c, f) {
@@ -237,7 +237,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 26,
     name: "Chevron Stache",
     slot: "mouth",
-    description: "Thick retro 70s chevron mustache framed right above the mouth.",
+    description: "The 'stache your dad used to have.",
     unlockLevel: 30,
     price: 380,
     draw(c, f) {
@@ -254,7 +254,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 28,
     name: "Swirl Cheeks",
     slot: "mouth",
-    description: "Cute retro spiral cheek swirls rendered in crisp 1-bit lines.",
+    description: "These are so cute, I don't even have a joke for these.",
     unlockLevel: 35,
     price: 460,
     draw(c, f) {
@@ -277,7 +277,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 31,
     name: "Goofy Grin Tooth",
     slot: "mouth",
-    description: "Cheeky oversized single pixel tooth popping below the mouth.",
+    description: "If you want to look like that one emoji.",
     unlockLevel: 40,
     price: 540,
     draw(c, f) {
@@ -292,7 +292,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 33,
     name: "Sage Beard",
     slot: "mouth",
-    description: "Layered pixel mustache paired with a pointed wizard chin beard.",
+    description: "Wise beyond its years.",
     unlockLevel: 45,
     price: 720,
     draw(c, f) {
@@ -313,7 +313,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 34,
     name: "Grandmaster Stache",
     slot: "mouth",
-    description: "Level 50 imperial walrus mustache with signature pixel goatee.",
+    description: "So your Codo can look like Gandalf.",
     unlockLevel: 50,
     price: 950,
     draw(c, f) {
@@ -333,7 +333,7 @@ export const MOUTH_ACCESSORIES: Accessory[] = [
     cosmeticId: 36,
     name: "Diamond Cheeks",
     slot: "mouth",
-    description: "Level 50 radiant hollow pixel diamonds flanking both cheeks.",
+    description: "Congrats on reaching level 50 :)",
     unlockLevel: 50,
     price: 900,
     draw(c, f) {

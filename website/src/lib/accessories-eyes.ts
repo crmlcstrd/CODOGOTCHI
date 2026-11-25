@@ -20,7 +20,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 1,
     name: "Pixel Shades",
     slot: "eyes",
-    description: "Classic 8-bit deal-with-it shades with diagonal pixel glare.",
+    description: "Classic 8-bit deal-with-it shades.",
     unlockLevel: 0,
     price: 30,
     isStarter: true,
@@ -54,7 +54,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 4,
     name: "Flutter Lashes",
     slot: "eyes",
-    description: "Three crisp angled lashes fanning off each upper eye corner.",
+    description: "For that dainty, kawaii-desu look.",
     unlockLevel: 0,
     price: 30,
     isStarter: true,
@@ -76,7 +76,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 7,
     name: "Wire Specs",
     slot: "eyes",
-    description: "Minimalist 1px thin-wire rectangular reading glasses.",
+    description: "Nerd.",
     unlockLevel: 3,
     price: 60,
     draw(c, f) {
@@ -98,7 +98,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 8,
     name: "Retro Round",
     slot: "eyes",
-    description: "Thin-rimmed vintage round spectacles with arched bridge.",
+    description: "Retro nerd.",
     unlockLevel: 6,
     price: 85,
     draw(c, f) {
@@ -121,7 +121,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 11,
     name: "Studio Frames",
     slot: "eyes",
-    description: "Bold architectural rectangular glasses with thick browline.",
+    description: "Filmbro glasses.",
     unlockLevel: 10,
     price: 120,
     draw(c, f) {
@@ -141,7 +141,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 12,
     name: "Browline Half-Rims",
     slot: "eyes",
-    description: "Sleek heavy-top browline frames open along the lower edge.",
+    description: "Office siren glasses.",
     unlockLevel: 10,
     price: 125,
     draw(c, f) {
@@ -164,7 +164,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 15,
     name: "Wayfarer Shades",
     slot: "eyes",
-    description: "Chunky 80s wayfarer sunglasses with corner pixel studs.",
+    description: "Throwback to the 80s.",
     unlockLevel: 14,
     price: 175,
     draw(c, f) {
@@ -191,7 +191,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 17,
     name: "Cat-Eye Frames",
     slot: "eyes",
-    description: "Sharp upswept winged frames sculpted for a crisp 1-bit look.",
+    description: "My mom used to have these glasses.",
     unlockLevel: 18,
     price: 220,
     draw(c, f) {
@@ -212,7 +212,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 19,
     name: "Dapper Monocle",
     slot: "eyes",
-    description: "Single precision rim over the right eye with hanging pixel chain.",
+    description: "If you want your Codo to look insufferable.",
     unlockLevel: 22,
     price: 270,
     draw(c, f) {
@@ -235,7 +235,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 20,
     name: "Doll Lashes",
     slot: "eyes",
-    description: "Long arched upper lashes paired with delicate lower corner ticks.",
+    description: "Incase the lashes earlier weren't kawaii-desu enough.",
     unlockLevel: 22,
     price: 260,
     draw(c, f) {
@@ -262,7 +262,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 22,
     name: "Aviator Shades",
     slot: "eyes",
-    description: "Teardrop double-bridge aviator sunglasses with angled sheen.",
+    description: "Can you fly a plane?",
     unlockLevel: 26,
     price: 330,
     draw(c, f) {
@@ -286,7 +286,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 24,
     name: "Shutter Shades",
     slot: "eyes",
-    description: "Slatted horizontal shutter shades built for crisp OLED contrast.",
+    description: "Hello 2016.",
     unlockLevel: 30,
     price: 400,
     draw(c, f) {
@@ -307,9 +307,9 @@ export const EYE_ACCESSORIES: Accessory[] = [
   {
     id: "pirate-patch",
     cosmeticId: 25,
-    name: "Coder Eye Patch",
+    name: "Pirate Eye Patch",
     slot: "eyes",
-    description: "Bold monochrome patch over the left eye with diagonal strap.",
+    description: "Arr.",
     unlockLevel: 30,
     price: 390,
     draw(c, f) {
@@ -331,7 +331,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 27,
     name: "Cyber Visor",
     slot: "eyes",
-    description: "Wrap-around OLED cyber visor with glowing scanline slit.",
+    description: "AS COOL AS IT GETS!!!!.",
     unlockLevel: 35,
     price: 480,
     draw(c, f) {
@@ -352,7 +352,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 29,
     name: "Heart Shades",
     slot: "eyes",
-    description: "Twin pixel heart sunglasses with crisp glossy notches.",
+    description: "♥ ♥ ♥ ♥",
     unlockLevel: 40,
     price: 580,
     draw(c, f) {
@@ -373,7 +373,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 30,
     name: "Power Scouter",
     slot: "eyes",
-    description: "Asymmetric HUD targeting lens over the right eye with crosshair.",
+    description: "Ready, aim, fire.",
     unlockLevel: 40,
     price: 610,
     draw(c, f) {
@@ -398,7 +398,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 32,
     name: "Star Shades",
     slot: "eyes",
-    description: "Angular six-point star-cut shades built for high-rating flexes.",
+    description: "⭐⭐⭐⭐.",
     unlockLevel: 45,
     price: 740,
     draw(c, f) {
@@ -418,7 +418,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 35,
     name: "Grandmaster Visor",
     slot: "eyes",
-    description: "Level 50 twin-beam full-width OLED visor with notched bridge.",
+    description: "Nevermind, it does get cooler.",
     unlockLevel: 50,
     price: 1000,
     draw(c, f) {
