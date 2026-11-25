@@ -106,7 +106,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
         <div className="animate-hello relative z-10 flex max-w-md flex-col items-center">
           <p className="mb-4 font-mono text-xs tracking-[0.28em] text-muted-foreground uppercase">
-            Codogotchi : Your Coding Desk Buddy
+            Codogotchi : Your Coding Desk buddy
           </p>
           <h1 className="font-display text-8xl italic tracking-tight text-foreground sm:text-9xl">
             hello

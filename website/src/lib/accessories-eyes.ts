@@ -331,7 +331,7 @@ export const EYE_ACCESSORIES: Accessory[] = [
     cosmeticId: 27,
     name: "Cyber Visor",
     slot: "eyes",
-    description: "AS COOL AS IT GETS!!!!.",
+    description: "AS COOL AS IT GETS!!!!",
     unlockLevel: 35,
     price: 480,
     draw(c, f) {
