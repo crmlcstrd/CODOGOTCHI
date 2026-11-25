@@ -20,3 +20,4 @@ priy here!!! :D
 
 update 1: the website currently has a login screen, asking for your + codo's name, connecting cf + gh, starts at level 0 + 0 codocoins, uses scoring metric (check src/lib/scoring for metric), and the items are fully unlockable! i do think we need a log out button tho lmao
 ill probably first make the changes in the other repo and then check here :D
+update 2: uncringed accessory decs, couple of visual tweaks here and there, along with desc changes. still no log out tho c: i might js lowk keep it that way. also DHRUV
