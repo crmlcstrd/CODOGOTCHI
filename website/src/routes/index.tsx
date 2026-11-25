@@ -15,15 +15,15 @@ import { MAX_LEVEL, moodLabelFromLevel } from "@/lib/scoring";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Codogotchi: Your Coding Buddy"}
+      { title: "Codogotchi: Your Coding Desk Buddy" },
       {
         name: "description",
-        content: "Buy accessories for your Codogotchi and view your stats!",
+        content: "Buy accessories for your Codo and view your stats!",
       },
-      { property: "og:title", content: "Codogotchi: Your Coding Buddy"}
+      { property: "og:title", content: "Codogotchi: Your Coding Desk Buddy" },
       {
         property: "og:description",
-        content: "Buy accessories for your Codogotchi and view your stats!",
+        content: "Buy accessories for your Codo and view your stats!",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
