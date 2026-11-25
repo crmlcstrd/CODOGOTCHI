@@ -18,6 +18,7 @@
  */
 
 #define SIM_WOKWI 1   // remove for real hardware
+#include "accessories.h"
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -362,10 +363,10 @@ static void drawSparkles(uint32_t now) {
 }
 
 static void drawCosmetic(uint8_t id) {
-  switch (id) {
-    case 1: display.drawLine(64, 0, 64, 7, WHITE); display.fillCircle(64, 2, 2, WHITE); break;
-    default: break;
-  }
+  if (id == 0) return;
+  FaceFrame f;
+  buildFaceFrame(f, cur.eyeOpen);
+  drawAccessory(id, f);
 }
 
 static void drawFrame(uint32_t now) {
@@ -578,19 +579,31 @@ static void handleSerial() {
   while (Serial.available()) {
     char ch = Serial.read();
     if (ch != '\n' && ch != '\r') { buf += ch; continue; }
+    buf.trim();
     if (!buf.length()) continue;
+
+    // Numeric input -> set cosmetic (1..36, 0 = none)
+    if (isdigit(buf[0])) {
+      int v = buf.toInt();
+      pet.cosmetic = constrain(v, 0, 36);
+      prefs.putUChar("cos", pet.cosmetic);
+      pet.demoUntil = millis() + 10UL * 60000UL;
+      Serial.print("cosmetic = "); Serial.println(pet.cosmetic);
+      buf = ""; continue;
+    }
+
     char c = buf[0];
     int v = buf.substring(1).toInt();
-    buf = "";
     pet.demoUntil = millis() + 10UL * 60000UL;
     switch (c) {
       case 'm': pet.mood = constrain(v, 0, 3); break;
       case 'h': pet.health = constrain(v, 0, 100); break;
-      case 'l': pet.level = constrain(v, 1, 50); pet.levelUpPending = true; break; // Changed from 'a' to 'l'
+      case 'l': pet.level = constrain(v, 1, 50); pet.levelUpPending = true; break;
       case 'c': pet.celebratePending = true; break;
       case 'z': pet.sleepNow = !pet.sleepNow; break;
       case 't': dbgTouch = !dbgTouch; break;
     }
+    buf = "";
   }
 }
 
