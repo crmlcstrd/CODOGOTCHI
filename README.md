@@ -15,3 +15,8 @@ still havent completely figured out health and mood relation, but health should 
 DHRUV here :)
 
 replaced sketchino with my code, added types.h (header for sketch cuz arduino is retarded), replaced diagramjson, Let me know if the current face is nice or if you want me to add your modifications back! for now, the base functions like health, mood, celebrations, petting animation, hibernation mode work perfectly with the push button. once I get the website code and hardware I'll try to add the functionality for that as well!
+
+priy here!!! :D
+
+update 1: the website currently has a login screen, asking for your + codo's name, connecting cf + gh, starts at level 0 + 0 codocoins, uses scoring metric (check src/lib/scoring for metric), and the items are fully unlockable! i do think we need a log out button tho lmao
+ill probably first make the changes in the other repo and then check here :D
