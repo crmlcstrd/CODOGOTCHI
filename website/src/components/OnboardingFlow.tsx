@@ -106,13 +106,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
         <div className="animate-hello relative z-10 flex max-w-md flex-col items-center">
           <p className="mb-4 font-mono text-xs tracking-[0.28em] text-muted-foreground uppercase">
-            codo desk buddy
+            Codogotchi : Your Coding Desk Buddy
           </p>
           <h1 className="font-display text-8xl italic tracking-tight text-foreground sm:text-9xl">
             hello
           </h1>
           <p className="mt-6 text-base text-muted-foreground">
-            Meet your ESP32 coding companion. Link your Codeforces and GitHub to unlock accessories for its 0.96&quot; OLED face.
+            Meet your own personal Codogotchi! Give it a name, level it up, and buy it accessories to make it feel like your own.
           </p>
           <Button onClick={handleStart} size="lg" className="mt-10 rounded-full px-8 font-medium">
             Set up your buddy
