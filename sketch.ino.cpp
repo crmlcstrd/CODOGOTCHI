@@ -50,7 +50,8 @@ static const uint32_t TAP_MAX_MS   = 280;
 static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
 
-static const char*    API_URL = "https://YOUR-SITE.example/api/device/state";
+
+static const char* API_URL = "https://crmlcstrd-codogotchi-website.zelepriyanka-03c.workers.dev/api/device/state";
 static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up within ~30 s (double-tap + hold = sync now)
 
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
@@ -420,7 +421,7 @@ static bool fetchState() {
   client.setInsecure();
   HTTPClient http;
   if (!http.begin(client, API_URL)) return false;
-  http.setTimeout(8000);
+  http.setTimeout(15000);
   http.addHeader("Authorization", "Bearer " + prefs.getString("token", ""));
   int code = http.GET();
   if (code != 200) { http.end(); return false; }
@@ -435,11 +436,12 @@ static bool fetchState() {
   int mood = doc["mood"] | (int)pet.mood;
   int health = doc["health"] | (int)pet.health;
   int level = doc["level"] | (int)pet.level; // Renamed from age
-  uint32_t seq = doc["celebrate_seq"] | 0u;
-
-  if (level > pet.level) pet.levelUpPending = true; // Renamed from ageUpPending
-  if (seq > pet.celebrateSeq) pet.celebratePending = true;
-  pet.celebrateSeq = seq;
+  if (level > pet.level) pet.levelUpPending = true;
+  if (doc["celebrate_seq"].is<uint32_t>()) {
+    uint32_t seq = doc["celebrate_seq"].as<uint32_t>();
+    if (seq > pet.celebrateSeq) pet.celebratePending = true;
+    pet.celebrateSeq = seq;
+  }
   pet.mood = constrain(mood, 0, 3);
   pet.health = constrain(health, 0, 100);
   pet.level = constrain(level, 0, 50); // Capped at 50
@@ -514,7 +516,7 @@ static void runSetupPortal() {
 
 static bool setupWindowHeld() {
   uint32_t t0 = millis(), heldSince = 0;
-  while (millis() - t0 < 2000) {
+  while (millis() - t0 < 10000) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(14, 28);
@@ -599,9 +601,11 @@ static void handleSerial() {
     // Numeric input -> equip that accessory in its slot (1..36), 0 = clear both slots
     if (isdigit(buf[0])) {
       int v = buf.toInt();
+      uint8_t oldEyes = pet.eyes, oldMouth = pet.mouth;
       if (v == 0) { pet.eyes = 0; pet.mouth = 0; }
       else if (v <= 36 && accessorySlot((uint8_t)v) == 0) pet.eyes = v;
       else if (v <= 36 && accessorySlot((uint8_t)v) == 1) pet.mouth = v;
+      if (pet.eyes != oldEyes || pet.mouth != oldMouth) pet.cosmeticChanged = true;   // play the equip reaction
       prefs.putUChar("eyes", pet.eyes); prefs.putUChar("mouth", pet.mouth);
       pet.demoUntil = millis() + 10UL * 60000UL;
       Serial.printf("eyes = %u, mouth = %u\n", (unsigned)pet.eyes, (unsigned)pet.mouth);
