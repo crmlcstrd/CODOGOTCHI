@@ -15,12 +15,12 @@ import { syncExternalProfile } from "@/lib/integrations.functions";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile & Stats — Codo Desk Buddy" },
+      { title: "Profile & Stats" },
       {
         name: "description",
         content: "Manage your desk buddy settings and inspect live Codeforces rating history, problem categories, and GitHub activity heatmaps.",
       },
-      { property: "og:title", content: "Profile & Stats — Codo Desk Buddy" },
+      { property: "og:title", content: "Profile & Stats" },
       {
         property: "og:description",
         content: "Manage your desk buddy settings and inspect live Codeforces rating history, problem categories, and GitHub activity heatmaps.",
