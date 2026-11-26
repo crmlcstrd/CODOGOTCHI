@@ -166,7 +166,7 @@ function ProfilePage() {
               <div>
                 <h2 className="text-lg font-semibold">Profile &amp; Buddy Settings</h2>
                 <p className="text-xs text-muted-foreground">
-                  Update your names or linked Codeforces and GitHub handles anytime.
+                  Update your names or linked Codeforces and GitHub handles.
                 </p>
               </div>
               <Button type="submit" disabled={saving} className="rounded-full px-5">
