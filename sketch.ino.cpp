@@ -516,7 +516,7 @@ static void runSetupPortal() {
 
 static bool setupWindowHeld() {
   uint32_t t0 = millis(), heldSince = 0;
-  while (millis() - t0 < 10000) {
+  while (millis() - t0 < 5000) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(14, 28);
