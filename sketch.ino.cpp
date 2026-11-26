@@ -9,12 +9,14 @@
  * computes mood/health/level, and the ESP32 just fetches ~200 bytes of JSON and acts it out.
  *
  * Expected response of GET API_URL  (Authorization: Bearer <device token>):
- *   {"v":1,"mood":2,"health":73,"level":4,"cosmetic":1,"celebrate_seq":142,"sleep":false}
+ *   {"v":1,"mood":2,"health":73,"level":4,"eyes":1,"mouth":2,"celebrate_seq":142,"sleep":false}
  *     mood 0 sad | 1 neutral | 2 happy | 3 ecstatic
+ *     eyes / mouth = cosmeticId of the equipped accessory in that slot (0 = nothing equipped)
  *     celebrate_seq increments every time the user earns something new (solve / push)
  *     sleep = true during the user's quiet hours
  *
- * Serial debug commands (115200): m0-m3 mood, h0-h100 health, l<n> level-up, c celebrate, z toggle sleep, t print touch
+ * Serial debug commands (115200): m0-m3 mood, h0-h100 health, l<n> level-up, c celebrate, z toggle sleep, t print touch,
+ *   1-36 equip that accessory in its slot, 0 clear both slots
  */
 
 #define SIM_WOKWI 1   // remove for real hardware
@@ -49,7 +51,7 @@ static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
 
 static const char*    API_URL = "https://YOUR-SITE.example/api/device/state";
-static const uint32_t POLL_MS = 120000;
+static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up within ~30 s (double-tap + hold = sync now)
 
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -362,11 +364,12 @@ static void drawSparkles(uint32_t now) {
   }
 }
 
-static void drawCosmetic(uint8_t id) {
-  if (id == 0) return;
+static void drawCosmetics() {
+  if (!pet.eyes && !pet.mouth) return;
   FaceFrame f;
   buildFaceFrame(f, cur.eyeOpen);
-  drawAccessory(id, f);
+  if (pet.eyes)  drawAccessory(pet.eyes, f);
+  if (pet.mouth) drawAccessory(pet.mouth, f);
 }
 
 static void drawFrame(uint32_t now) {
@@ -376,7 +379,7 @@ static void drawFrame(uint32_t now) {
   drawEye(90, false, cur, blink);
   drawMouth(cur);
   drawBlush(cur.blush);
-  drawCosmetic(pet.cosmetic);
+  drawCosmetics();
 
   if (!sleeping && rx == RX_CELEBRATE) drawSparkles(now);
   if (!sleeping && rx == RX_PET) {
@@ -439,12 +442,18 @@ static bool fetchState() {
   pet.celebrateSeq = seq;
   pet.mood = constrain(mood, 0, 3);
   pet.health = constrain(health, 0, 100);
-  pet.level = constrain(level, 1, 50); // Capped at 50
-  pet.cosmetic = doc["cosmetic"] | (int)pet.cosmetic;
+  pet.level = constrain(level, 0, 50); // Capped at 50
+  int e = doc["eyes"]  | (int)pet.eyes;
+  int m = doc["mouth"] | (int)pet.mouth;
+  if (e < 0 || e > 255 || accessorySlot((uint8_t)e) != 0) e = 0;   // wrong slot or junk -> nothing
+  if (m < 0 || m > 255 || accessorySlot((uint8_t)m) != 1) m = 0;
+  if (e != pet.eyes || m != pet.mouth) pet.cosmeticChanged = true;
+  pet.eyes = e; pet.mouth = m;
   pet.sleepNow = doc["sleep"] | false;
 
   prefs.putUChar("mood", pet.mood); prefs.putUChar("health", pet.health);
-  prefs.putUChar("level", pet.level); prefs.putUChar("cos", pet.cosmetic); // Renamed from "age"
+  prefs.putUChar("level", pet.level);
+  prefs.putUChar("eyes", pet.eyes); prefs.putUChar("mouth", pet.mouth);
   prefs.putUInt("seq", pet.celebrateSeq);
   return true;
 }
@@ -555,6 +564,11 @@ static void housekeeping(uint32_t now) {
   sleeping = pet.sleepNow && now > wakeUntil;
   if (sleeping != prevSleeping) { display.dim(sleeping); prevSleeping = sleeping; }
 
+  if (pet.cosmeticChanged) {                          // accessory equipped/unequipped on the website
+    pet.cosmeticChanged = false;
+    if (!sleeping) { startRx(RX_POKE, 450); playSound(SND_HAPPY); }
+  }
+
   if (!sleeping && pet.levelUpPending) {              // level-up: longer celebration + show the number
     pet.levelUpPending = false; pet.celebratePending = false;
     levelShowUntil = now + 4000;
@@ -582,13 +596,15 @@ static void handleSerial() {
     buf.trim();
     if (!buf.length()) continue;
 
-    // Numeric input -> set cosmetic (1..36, 0 = none)
+    // Numeric input -> equip that accessory in its slot (1..36), 0 = clear both slots
     if (isdigit(buf[0])) {
       int v = buf.toInt();
-      pet.cosmetic = constrain(v, 0, 36);
-      prefs.putUChar("cos", pet.cosmetic);
+      if (v == 0) { pet.eyes = 0; pet.mouth = 0; }
+      else if (v <= 36 && accessorySlot((uint8_t)v) == 0) pet.eyes = v;
+      else if (v <= 36 && accessorySlot((uint8_t)v) == 1) pet.mouth = v;
+      prefs.putUChar("eyes", pet.eyes); prefs.putUChar("mouth", pet.mouth);
       pet.demoUntil = millis() + 10UL * 60000UL;
-      Serial.print("cosmetic = "); Serial.println(pet.cosmetic);
+      Serial.printf("eyes = %u, mouth = %u\n", (unsigned)pet.eyes, (unsigned)pet.mouth);
       buf = ""; continue;
     }
 
@@ -598,7 +614,7 @@ static void handleSerial() {
     switch (c) {
       case 'm': pet.mood = constrain(v, 0, 3); break;
       case 'h': pet.health = constrain(v, 0, 100); break;
-      case 'l': pet.level = constrain(v, 1, 50); pet.levelUpPending = true; break;
+      case 'l': pet.level = constrain(v, 0, 50); pet.levelUpPending = true; break;
       case 'c': pet.celebratePending = true; break;
       case 'z': pet.sleepNow = !pet.sleepNow; break;
       case 't': dbgTouch = !dbgTouch; break;
@@ -629,8 +645,9 @@ void setup() {
 
   pet.mood = prefs.getUChar("mood", 1);
   pet.health = prefs.getUChar("health", 60);
-  pet.level = prefs.getUChar("level", 1); // Renamed from "age"
-  pet.cosmetic = prefs.getUChar("cos", 0);
+  pet.level = prefs.getUChar("level", 0);
+  pet.eyes  = prefs.getUChar("eyes", 0);
+  pet.mouth = prefs.getUChar("mouth", 0);
   pet.celebrateSeq = prefs.getUInt("seq", 0);
   muted = prefs.getBool("mute", false);
 
@@ -638,7 +655,7 @@ void setup() {
   for (uint8_t i = 0; i < NSEG; i++) pinMode(TOUCH_PINS[i], INPUT_PULLUP);
   prefs.putString("ssid", "Wokwi-GUEST");
   prefs.putString("pass", "");
-  prefs.putString("token", "dev");
+  prefs.putString("token", "dev");   // replace "dev" with your real device token (Profile page) to test the sim against the live site
 #endif
 
   touchCalibrate();

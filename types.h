@@ -7,8 +7,10 @@
 struct PetState {                     
   volatile uint8_t  mood = 1;         
   volatile uint8_t  health = 60;      
-  volatile uint8_t  level = 1;        // Renamed from age, capped at 50
-  volatile uint8_t  cosmetic = 0;
+  volatile uint8_t  level = 0;        // 0..50 (website starts at level 0)
+  volatile uint8_t  eyes = 0;         // equipped eyes accessory id (cosmeticId), 0 = none
+  volatile uint8_t  mouth = 0;        // equipped mouth accessory id (cosmeticId), 0 = none
+  volatile bool     cosmeticChanged = false;
   volatile uint32_t celebrateSeq = 0;
   volatile bool     sleepNow = false;
   volatile bool     syncRequested = false;

@@ -508,6 +508,23 @@ static void acc_diamond_cheeks(const FaceFrame& f) {
 }
 
 // ============================================================
+//  SLOT LOOKUP — which slot a cosmeticId belongs to
+//  0 = eyes, 1 = mouth, -1 = none / invalid
+// ============================================================
+static inline int8_t accessorySlot(uint8_t id) {
+  switch (id) {
+    case  1: case  4: case  7: case  8: case 11: case 12: case 15: case 17: case 19:
+    case 20: case 22: case 24: case 25: case 27: case 29: case 30: case 32: case 35:
+      return 0;
+    case  2: case  3: case  5: case  6: case  9: case 10: case 13: case 14: case 16:
+    case 18: case 21: case 23: case 26: case 28: case 31: case 33: case 34: case 36:
+      return 1;
+    default:
+      return -1;
+  }
+}
+
+// ============================================================
 //  DISPATCHER — call this from drawFrame()
 // ============================================================
 static void drawAccessory(uint8_t id, const FaceFrame& f) {
