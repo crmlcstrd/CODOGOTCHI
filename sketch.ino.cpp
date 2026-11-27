@@ -53,7 +53,7 @@ static const uint32_t TAP_MAX_MS   = 280;
 static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
 
-static const char* API_URL = "https://crmlcstrd-codogotchi-website.zelepriyanka-03c.workers.dev/api/device/state";
+static const char* API_URL = "https://codogotchi-backend.codobackend.workers.dev/api/device/state";
 static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up within ~30 s (double-tap + hold = sync now)
 
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))

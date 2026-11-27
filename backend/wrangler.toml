@@ -1,0 +1,7 @@
+name = "codogotchi-backend"
+main = "worker.mjs"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["* * * * *"]   # ingest tick every minute (CF poll + GH events fallback)
