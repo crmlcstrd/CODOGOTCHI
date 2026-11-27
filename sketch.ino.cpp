@@ -1,9 +1,14 @@
 /*
  * CODOGOTCHI - ESP32 firmware skeleton (untested on hardware: expect to tune touch thresholds)
  *
- * Hardware : ESP32 (classic) + SSD1306 128x64 I2C + passive buzzer + copper touch strip
- * Libraries: Adafruit SSD1306, Adafruit GFX, ArduinoJson 7.x
+ * Hardware : ESP32 + 1.3" SH1106 128x64 I2C OLED + passive buzzer + TTP223 touch module
+ *   Wiring : OLED  VCC->3V3, GND->GND, SDA->GPIO21, SCL->GPIO22
+ *            Buzzer (passive) + -> GPIO25, - -> GND
+ *            TTP223 VCC->3V3, GND->GND, OUT->GPIO4 (active-HIGH output).
+ *            Nothing else should drive GPIO4.
+ * Libraries: Adafruit SH110X (for the SH1106 OLED), Adafruit GFX, ArduinoJson 7.x
  *            (WiFi, HTTPClient, WebServer, Preferences ship with the ESP32 Arduino core; 2.x and 3.x both work)
+ *            Install ArduinoJson 7.x specifically - version 6 will not compile this sketch.
  *
  * Design: the device is a "dumb" client. A backend (your website's server) talks to Codeforces + GitHub,
  * computes mood/health/level, and the ESP32 just fetches ~200 bytes of JSON and acts it out.
@@ -19,12 +24,11 @@
  *   1-36 equip that accessory in its slot, 0 clear both slots
  */
 
-#define SIM_WOKWI 1   // remove for real hardware
 #include "accessories.h"
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SH110X.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -45,11 +49,9 @@
 static const uint8_t TOUCH_PINS[] = {4};
 constexpr uint8_t NSEG = sizeof(TOUCH_PINS) / sizeof(TOUCH_PINS[0]);
 
-static const float    T_ON = 0.25f, T_OFF = 0.12f;
 static const uint32_t TAP_MAX_MS   = 280;
 static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
-
 
 static const char* API_URL = "https://crmlcstrd-codogotchi-website.zelepriyanka-03c.workers.dev/api/device/state";
 static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up within ~30 s (double-tap + hold = sync now)
@@ -57,7 +59,7 @@ static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up wi
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
 
 // ============================ GLOBALS ============================
-Adafruit_SSD1306 display(OLED_W, OLED_H, &Wire, -1);
+Adafruit_SH1106G display = Adafruit_SH1106G(OLED_W, OLED_H, &Wire, -1);
 Preferences prefs;
 PetState pet;
 
@@ -127,35 +129,24 @@ Seg segs[NSEG];
 static void touchCalibrate() {
   for (uint8_t i = 0; i < NSEG; i++) {
     segs[i].pin = TOUCH_PINS[i];
-    segs[i].base = readTouch(segs[i].pin);
-    segs[i].last = segs[i].base;
+
+    pinMode(segs[i].pin, INPUT);
+
+    segs[i].base = 0;
+    segs[i].last = 0;
     segs[i].on = false;
   }
 }
 
-static uint32_t med3(uint32_t a, uint32_t b, uint32_t c) {
-  if (a > b) { uint32_t t = a; a = b; b = t; }
-  if (b > c) { b = c; }
-  return a > b ? a : b;
-}
-
-static uint32_t readTouch(uint8_t pin) {
-#ifdef SIM_WOKWI
-  return digitalRead(pin) == LOW ? 20 : 70;
-#else
-  return med3(touchRead(pin), touchRead(pin), touchRead(pin));
-#endif
-}
-
 static bool segTouched(Seg& s) {
-  uint32_t v = readTouch(s.pin);
-  s.last = v;
-  float dev = fabsf((float)v - s.base) / s.base;
-  if (!s.on && dev > T_ON) s.on = true;
-  else if (s.on && dev < T_OFF) s.on = false;
-  if (!s.on) s.base += ((float)v - s.base) * 0.01f;
-  return s.on;
+  bool touched = digitalRead(s.pin) == HIGH;
+
+  s.last = touched ? 1 : 0;
+  s.on = touched;
+
+  return touched;
 }
+
 
 static Gesture gestureUpdate(uint32_t now) {
   static bool wasTouched = false, holdFired = false, swiped = false, petHold = false;
@@ -170,7 +161,7 @@ static Gesture gestureUpdate(uint32_t now) {
 
   if (dbgTouch && now - lastDbg > 150) {
     lastDbg = now;
-    for (uint8_t i = 0; i < NSEG; i++) Serial.printf("seg%u raw=%lu base=%.0f on=%d  ", i, (unsigned long)segs[i].last, segs[i].base, segs[i].on);
+    for (uint8_t i = 0; i < NSEG; i++) Serial.printf("seg%u raw=%lu on=%d  ", i, (unsigned long)segs[i].last, segs[i].on);
     Serial.println();
   }
 
@@ -307,19 +298,19 @@ static void drawEye(int cx, bool leftEye, const Face& f, float blink) {
     for (int i = -ew / 2; i <= ew / 2; i++) {
       float k = (float)i / (ew / 2);
       int yy = yc + 5 - (int)(9 * (1.f - k * k));
-      for (int t = 0; t < 3; t++) display.drawPixel(cx + lx + i, yy + t, WHITE);
+      for (int t = 0; t < 3; t++) display.drawPixel(cx + lx + i, yy + t, SH110X_WHITE);
     }
     return;
   }
   int x = cx - ew / 2 + lx;
   int y = yc - (int)(oh / 2);
-  display.fillRoundRect(x, y, ew, (int)oh, 8, WHITE);
+  display.fillRoundRect(x, y, ew, (int)oh, 8, SH110X_WHITE);
   if (f.droop > 0.05f) {
     int d   = (int)(f.droop * oh * 0.6f);
     int lid = (int)(f.droop * oh * 0.2f);
-    if (lid > 0) display.fillRect(x - 1, y - 1, ew + 2, lid + 1, BLACK);
-    if (leftEye) display.fillTriangle(x - 1, y - 1, x + ew + 1, y - 1, x - 1, y + d, BLACK);
-    else         display.fillTriangle(x + ew + 1, y - 1, x - 1, y - 1, x + ew + 1, y + d, BLACK);
+    if (lid > 0) display.fillRect(x - 1, y - 1, ew + 2, lid + 1, SH110X_BLACK);
+    if (leftEye) display.fillTriangle(x - 1, y - 1, x + ew + 1, y - 1, x - 1, y + d, SH110X_BLACK);
+    else         display.fillTriangle(x + ew + 1, y - 1, x - 1, y - 1, x + ew + 1, y + d, SH110X_BLACK);
   }
 }
 
@@ -327,7 +318,7 @@ static void drawMouth(const Face& f) {
   const int cx = 64, cy = 50;
   int W = 10 + (int)(6 * fabsf(f.smile));
   if (f.mouth > 0.3f && fabsf(f.smile) < 0.25f) {
-    display.fillCircle(cx, cy + 2, 2 + (int)(f.mouth * 3), WHITE);
+    display.fillCircle(cx, cy + 2, 2 + (int)(f.mouth * 3), SH110X_WHITE);
     return;
   }
   int px = 0, py = 0;
@@ -337,9 +328,9 @@ static void drawMouth(const Face& f) {
     if (f.smile > 0.2f && f.mouth > 0.2f) {
       int top = cy - 1;
       int h = (int)((y - top) * f.mouth);
-      if (h > 0) { display.drawFastVLine(cx + i, top, h + 1, WHITE); display.drawFastVLine(cx + i + 1, top, h + 1, WHITE); }
+      if (h > 0) { display.drawFastVLine(cx + i, top, h + 1, SH110X_WHITE); display.drawFastVLine(cx + i + 1, top, h + 1, SH110X_WHITE); }
     }
-    if (i > -W) { display.drawLine(px, py, cx + i, y, WHITE); display.drawLine(px, py + 1, cx + i, y + 1, WHITE); }
+    if (i > -W) { display.drawLine(px, py, cx + i, y, SH110X_WHITE); display.drawLine(px, py + 1, cx + i, y + 1, SH110X_WHITE); }
     px = cx + i; py = y;
   }
 }
@@ -347,12 +338,12 @@ static void drawMouth(const Face& f) {
 static void drawBlush(float a) {
   if (a < 0.3f) return;
   for (int dx = 0; dx < 8; dx++) for (int dy = 0; dy < 4; dy++)
-    if (((dx + dy) & 1) == 0) { display.drawPixel(10 + dx, 42 + dy, WHITE); display.drawPixel(110 + dx, 42 + dy, WHITE); }
+    if (((dx + dy) & 1) == 0) { display.drawPixel(10 + dx, 42 + dy, SH110X_WHITE); display.drawPixel(110 + dx, 42 + dy, SH110X_WHITE); }
 }
 
 static void drawHeart(int x, int y) {
-  display.fillCircle(x - 2, y, 2, WHITE); display.fillCircle(x + 2, y, 2, WHITE);
-  display.fillTriangle(x - 4, y + 1, x + 4, y + 1, x, y + 5, WHITE);
+  display.fillCircle(x - 2, y, 2, SH110X_WHITE); display.fillCircle(x + 2, y, 2, SH110X_WHITE);
+  display.fillTriangle(x - 4, y + 1, x + 4, y + 1, x, y + 5, SH110X_WHITE);
 }
 
 static void drawSparkles(uint32_t now) {
@@ -360,8 +351,8 @@ static void drawSparkles(uint32_t now) {
   float s = (now - rxStart) / 1000.f;
   for (int k = 0; k < 6; k++) {
     int r = (int)(fabsf(sinf(s * 8.f + k * 1.3f)) * 3.f) + 1;
-    display.drawFastHLine(PX[k] - r, PY[k], 2 * r + 1, WHITE);
-    display.drawFastVLine(PX[k], PY[k] - r, 2 * r + 1, WHITE);
+    display.drawFastHLine(PX[k] - r, PY[k], 2 * r + 1, SH110X_WHITE);
+    display.drawFastVLine(PX[k], PY[k] - r, 2 * r + 1, SH110X_WHITE);
   }
 }
 
@@ -416,7 +407,7 @@ static bool wifiUp() {
 }
 
 static bool fetchState() {
-  if (!wifiUp()) return false;
+  if (!wifiUp()) { Serial.println("fetch: WiFi not connected"); return false; }
   WiFiClientSecure client;
   client.setInsecure();
   HTTPClient http;
@@ -424,11 +415,12 @@ static bool fetchState() {
   http.setTimeout(15000);
   http.addHeader("Authorization", "Bearer " + prefs.getString("token", ""));
   int code = http.GET();
-  if (code != 200) { http.end(); return false; }
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, http.getStream());
+  if (code != 200) { Serial.printf("fetch: HTTP %d\n", code); http.end(); return false; }
+  String body = http.getString();   // getString() copes with chunked responses (getStream() does not)
   http.end();
-  if (err) return false;
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, body);
+  if (err) { Serial.printf("fetch: bad JSON (%s): %s\n", err.c_str(), body.c_str()); return false; }
 
   pet.lastSyncOkMs = millis();
   if (millis() < pet.demoUntil) return true;
@@ -436,12 +428,11 @@ static bool fetchState() {
   int mood = doc["mood"] | (int)pet.mood;
   int health = doc["health"] | (int)pet.health;
   int level = doc["level"] | (int)pet.level; // Renamed from age
-  if (level > pet.level) pet.levelUpPending = true;
-  if (doc["celebrate_seq"].is<uint32_t>()) {
-    uint32_t seq = doc["celebrate_seq"].as<uint32_t>();
-    if (seq > pet.celebrateSeq) pet.celebratePending = true;
-    pet.celebrateSeq = seq;
-  }
+  uint32_t seq = doc["celebrate_seq"] | 0u;
+
+  if (level > pet.level) pet.levelUpPending = true; // Renamed from ageUpPending
+  if (seq > pet.celebrateSeq) pet.celebratePending = true;
+  pet.celebrateSeq = seq;
   pet.mood = constrain(mood, 0, 3);
   pet.health = constrain(health, 0, 100);
   pet.level = constrain(level, 0, 50); // Capped at 50
@@ -457,6 +448,9 @@ static bool fetchState() {
   prefs.putUChar("level", pet.level);
   prefs.putUChar("eyes", pet.eyes); prefs.putUChar("mouth", pet.mouth);
   prefs.putUInt("seq", pet.celebrateSeq);
+  Serial.printf("fetch ok: mood=%u health=%u level=%u eyes=%u mouth=%u seq=%lu\n", (unsigned)pet.mood,
+                (unsigned)pet.health, (unsigned)pet.level, (unsigned)pet.eyes, (unsigned)pet.mouth,
+                (unsigned long)pet.celebrateSeq);
   return true;
 }
 
@@ -516,7 +510,7 @@ static void runSetupPortal() {
 
 static bool setupWindowHeld() {
   uint32_t t0 = millis(), heldSince = 0;
-  while (millis() - t0 < 5000) {
+  while (millis() - t0 < 5000) {   // 5 s window: start touching once the text appears, hold ~1.5 s
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(14, 28);
@@ -564,7 +558,7 @@ static void housekeeping(uint32_t now) {
   static bool prevSleeping = false;
 
   sleeping = pet.sleepNow && now > wakeUntil;
-  if (sleeping != prevSleeping) { display.dim(sleeping); prevSleeping = sleeping; }
+  if (sleeping != prevSleeping) { display.setContrast(sleeping ? 0 : 0x80); prevSleeping = sleeping; }
 
   if (pet.cosmeticChanged) {                          // accessory equipped/unequipped on the website
     pet.cosmeticChanged = false;
@@ -635,8 +629,8 @@ void setup() {
 
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) { Serial.println("OLED init failed"); for (;;) delay(1000); }
-  display.setTextColor(WHITE);
+  if (!display.begin(OLED_ADDR, true)) { Serial.println("OLED init failed - check wiring (SDA=21, SCL=22) and the I2C address (0x3C or 0x3D)"); for (;;) delay(1000); }
+  display.setTextColor(SH110X_WHITE);
   display.clearDisplay(); display.display();
 
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
@@ -655,17 +649,10 @@ void setup() {
   pet.celebrateSeq = prefs.getUInt("seq", 0);
   muted = prefs.getBool("mute", false);
 
-#ifdef SIM_WOKWI
-  for (uint8_t i = 0; i < NSEG; i++) pinMode(TOUCH_PINS[i], INPUT_PULLUP);
-  prefs.putString("ssid", "Wokwi-GUEST");
-  prefs.putString("pass", "");
-  prefs.putString("token", "dev");   // replace "dev" with your real device token (Profile page) to test the sim against the live site
-#endif
-
   touchCalibrate();
   if (!prefs.getString("ssid", "").length() || setupWindowHeld()) runSetupPortal();
 
-  xTaskCreatePinnedToCore(netTask, "net", 12288, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(netTask, "net", 16384, NULL, 1, NULL, 0);   // TLS needs a big stack
   playSound(SND_WAKE);
 }
 
