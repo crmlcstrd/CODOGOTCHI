@@ -423,16 +423,18 @@ static bool fetchState() {
   if (err) { Serial.printf("fetch: bad JSON (%s): %s\n", err.c_str(), body.c_str()); return false; }
 
   pet.lastSyncOkMs = millis();
-  if (millis() < pet.demoUntil) return true;
-
-  int mood = doc["mood"] | (int)pet.mood;
-  int health = doc["health"] | (int)pet.health;
-  int level = doc["level"] | (int)pet.level; // Renamed from age
-  uint32_t seq = doc["celebrate_seq"] | 0u;
-
-  if (level > pet.level) pet.levelUpPending = true; // Renamed from ageUpPending
+  uint32_t seq = doc["celebrate_seq"] | pet.celebrateSeq;   // absent field must NOT reset to 0
   if (seq > pet.celebrateSeq) pet.celebratePending = true;
   pet.celebrateSeq = seq;
+  const bool demo = millis() < pet.demoUntil;   // demo overrides vitals ONLY, never cosmetics/seq
+  if (!demo) {
+    pet.mood   = constrain((int)(doc["mood"]   | (int)pet.mood),   0, 3);
+    pet.health = constrain((int)(doc["health"] | (int)pet.health), 0, 100);
+    int level  = doc["level"] | (int)pet.level;
+    if (level > pet.level) pet.levelUpPending = true;
+    pet.level  = constrain(level, 0, 50);
+  }
+
   pet.mood = constrain(mood, 0, 3);
   pet.health = constrain(health, 0, 100);
   pet.level = constrain(level, 0, 50); // Capped at 50
