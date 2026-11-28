@@ -133,7 +133,7 @@ export function OledModule({
           <span className="inline-block size-2 rounded-full bg-health" />
           {buddyName || "Desk Buddy"}
         </span>
-        <span>SSD1306 · 128×64</span>
+        <span>SH1106 · 128×64</span>
       </div>
 
       <div className="relative overflow-hidden rounded-xl border border-border/80 bg-oled-screen p-3 shadow-inner">
@@ -141,7 +141,7 @@ export function OledModule({
           ref={canvasRef}
           width={OLED_WIDTH}
           height={OLED_HEIGHT}
-          aria-label={`${buddyName || "Desk buddy"} 0.96 inch OLED display`}
+          aria-label={`${buddyName || "Desk buddy"} 1.3 inch OLED display`}
           className="oled-pixelated block aspect-[2/1] w-full rounded-sm"
         />
       </div>
@@ -158,7 +158,7 @@ export function OledModule({
             }`}
           >
             <Hand className="size-3.5" />
-            Touch Bar — Pet Buddy
+            Touch Pad — Pet Buddy
           </button>
           <button
             type="button"

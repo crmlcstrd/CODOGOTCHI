@@ -16,7 +16,7 @@ export interface Accessory {
   draw: (c: OledCanvas, f: FaceFrame) => void;
 }
 
-// Every accessory renders exclusively using Adafruit_SSD1306 / Adafruit_GFX primitives
+// Every accessory renders exclusively using Adafruit_SH1106G / Adafruit_GFX primitives
 // so it maps 1:1 to the 128x64 OLED display in Codogotchi's ESP32 firmware.
 export const ACCESSORIES: Accessory[] = [...EYE_ACCESSORIES, ...MOUTH_ACCESSORIES].sort(
   (a, b) => a.unlockLevel - b.unlockLevel || a.cosmeticId - b.cosmeticId,

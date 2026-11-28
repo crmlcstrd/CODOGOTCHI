@@ -8,7 +8,7 @@ Codo is a companion website for a programmable ESP32 desk buddy. It connects Cod
 
 ## Project architecture
 
-- **OLED renderer (`src/lib/oled-engine.ts` and `src/lib/accessories.ts`):** Faces and accessories render to a 1-bit 128×64 framebuffer. Keep the browser preview faithful to the physical 0.96-inch SSD1306 display and the drawing primitives supported by the ESP32 firmware.
+- **OLED renderer (`src/lib/oled-engine.ts` and `src/lib/accessories.ts`):** Faces and accessories render to a 1-bit 128×64 framebuffer. Keep the browser preview faithful to the physical 1.3-inch SH1106 display and the drawing primitives supported by the ESP32 firmware.
 - **External API sync (`src/lib/integrations.functions.ts`):** Codeforces and GitHub public API requests run server-side through TanStack Start server functions. Preserve the existing normalization of distinct solves, activity data, and CodoCoins calculations in `src/lib/scoring.ts`.
 - **Browser persistence (`src/lib/buddy-store.ts`):** Onboarding state, names, linked handles, owned/equipped accessories, and spent CodoCoins are stored in `localStorage`. Access browser storage only on the client (for example, after mount); do not read it synchronously during server-side rendering.
 

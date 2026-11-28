@@ -44,7 +44,10 @@ function ShopPage() {
     setProfileData,
     buyAccessory,
     toggleEquip,
-    syncNow,          
+    syncNow,
+    deviceToken,
+    login,
+    logout,
   } = useBuddyStore();
 
   const [slotFilter, setSlotFilter] = useState<"all" | AccessorySlot>("all");
@@ -58,7 +61,7 @@ function ShopPage() {
   }
 
   if (!state.onboarded) {
-    return <OnboardingFlow onComplete={completeOnboarding} />;
+    return <OnboardingFlow onComplete={completeOnboarding} onLogin={login} />;
   }
 
   const visibleAccessories =
@@ -109,6 +112,11 @@ function ShopPage() {
         level={level}
         avatarUrl={state.profileData?.github?.avatarUrl ?? null}
         activePage="shop"
+        deviceToken={deviceToken}
+        onLogout={() => {
+          logout();
+          toast.success("Logged out.");
+        }}
       />
 
       <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[360px_1fr] lg:items-start">

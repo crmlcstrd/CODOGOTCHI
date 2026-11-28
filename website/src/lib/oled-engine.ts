@@ -45,7 +45,7 @@ interface Face {
   happyEyes: number;
 }
 
-// Pixel-exact 128x64 monochrome framebuffer emulating Adafruit_SSD1306 + Adafruit_GFX primitives
+// Pixel-exact 128x64 monochrome framebuffer emulating Adafruit_SH1106G + Adafruit_GFX primitives
 export class PixelBufferCanvas implements OledCanvas {
   readonly pixels = new Uint8Array(OLED_WIDTH * OLED_HEIGHT);
 

@@ -6,7 +6,7 @@ import { ACCESSORIES, getAccessoryById } from "./accessories";
 import { syncExternalProfile, type SyncedProfileData } from "./integrations.functions";
 import type { BuddyMetrics } from "./scoring";
 import { moodLabelFromLevel } from "./scoring";
-import { api, getToken, setToken } from "./api";
+import { api, clearToken, getToken, setToken } from "./api";
 
 export const STORAGE_KEY = "codogotchi_state_v2"; // legacy: read-only fallback for handles + analytics
 const ANALYTICS_KEY = "codogotchi_analytics_v1";
@@ -107,6 +107,7 @@ export function useBuddyStore() {
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
   const runAnalytics = useServerFn(syncExternalProfile);
   const inflight = useRef<string | null>(null);
+  const sessionRef = useRef(0); // bumped on logout/login so late responses from an old session are dropped
 
   const mergeAnalytics = useCallback((codeforces: SyncedProfileData["codeforces"], github: SyncedProfileData["github"], syncedAt: string) => {
     setState((prev) => {
@@ -122,20 +123,24 @@ export function useBuddyStore() {
     if (cached) { mergeAnalytics(cached.codeforces, cached.github, new Date(cached.syncedAt).toISOString()); return; }
     if (inflight.current === key) return;
     inflight.current = key;
+    const session = sessionRef.current;
     try {
       const res = await runAnalytics({ data: { codeforcesHandle: cf, githubHandle: gh } });
+      if (session !== sessionRef.current) return; // logged out while loading
       writeCache(key, res);
       mergeAnalytics(res.codeforces, res.github, res.syncedAt);
     } catch {
-      toast.error("Could not load Codeforces/GitHub analytics. Check the handles and try Sync again.");
+      if (session === sessionRef.current) toast.error("Could not load Codeforces/GitHub analytics. Check the handles and try Sync again.");
     } finally {
-      inflight.current = null;
+      if (session === sessionRef.current) inflight.current = null;
     }
   }, [runAnalytics, mergeAnalytics]);
 
   const refresh = useCallback(async (): Promise<MeResponse | null> => {
     if (!getToken()) return null;
+    const session = sessionRef.current;
     const me = await api<MeResponse>("/api/me");
+    if (session !== sessionRef.current) return null; // logged out (or switched account) while loading
     setState((prev) => ({
       ...prev,
       onboarded: true,
@@ -263,11 +268,40 @@ export function useBuddyStore() {
     } catch (e) { toast.error((e as Error).message); }
   }, [refresh, state.equippedEyesId, state.equippedMouthId]);
 
+  // Sign in on this browser with an existing device token. The token is only kept if the server accepts it.
+  const login = useCallback(async (token: string) => {
+    const t = token.trim();
+    if (!t) throw new Error("Paste your device token first.");
+    const previous = getToken();
+    sessionRef.current += 1;
+    setToken(t);
+    try {
+      const me = await refresh();
+      if (!me) throw new Error("Could not sign in with that token.");
+      setDeviceToken(t);
+    } catch (e) {
+      if (previous) setToken(previous); else clearToken();
+      throw e;
+    }
+  }, [refresh]);
+
   const linkDevice = useCallback(async (token: string) => {
-    setToken(token.trim()); setDeviceToken(token.trim());
-    await refresh();
+    await login(token);
     void loadAnalytics(state.codeforcesHandle, state.githubHandle);
-  }, [refresh, loadAnalytics, state.codeforcesHandle, state.githubHandle]);
+  }, [login, loadAnalytics, state.codeforcesHandle, state.githubHandle]);
+
+  // Sign out of this browser only: the account, coins and robot are untouched on the server.
+  const logout = useCallback(() => {
+    sessionRef.current += 1;
+    inflight.current = null;
+    clearToken();
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(ANALYTICS_KEY);
+    } catch { /* storage unavailable */ }
+    setDeviceToken(null);
+    setState(DEFAULT_STATE);
+  }, []);
 
   const earnedCoins = state.profileData?.metrics.totalEarnedCoins ?? 0;
   const coinBalance = Math.max(0, earnedCoins - state.spentCoins);
@@ -278,6 +312,6 @@ export function useBuddyStore() {
   return {
     ready, state, earnedCoins, coinBalance, level, health, mood, deviceToken,
     completeOnboarding, updateProfileSettings, setProfileData, buyAccessory, toggleEquip,
-    syncNow, linkDevice, refresh,
+    syncNow, linkDevice, login, logout, refresh,
   };
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, KeyRound, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,11 @@ interface OnboardingFlowProps {
     starterIds: string[];
     profileData: SyncedProfileData | null;
   }) => void;
+  /** Sign in with an existing device token (rejects if the token is not recognised). */
+  onLogin?: (token: string) => Promise<void>;
 }
 
-export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+export function OnboardingFlow({ onComplete, onLogin }: OnboardingFlowProps) {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [userName, setUserName] = useState("");
   const [buddyName, setBuddyName] = useState("");
@@ -31,8 +33,29 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncedData, setSyncedData] = useState<SyncedProfileData | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const runSync = useServerFn(syncExternalProfile);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onLogin) return;
+    if (!tokenInput.trim()) {
+      setLoginError("Paste your device token first.");
+      return;
+    }
+    setLoginError(null);
+    setLoggingIn(true);
+    try {
+      await onLogin(tokenInput);
+    } catch {
+      setLoginError("That token was not recognised. Check it and try again.");
+      setLoggingIn(false);
+    }
+  };
 
   const handleStart = () => {
     playHelloChime();
@@ -118,6 +141,52 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             Set up your buddy
             <ArrowRight className="ml-2 size-4" />
           </Button>
+
+          {onLogin && (
+            <div className="mt-6 w-full">
+              {!showLogin ? (
+                <button
+                  type="button"
+                  onClick={() => setShowLogin(true)}
+                  className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                >
+                  Already have a buddy? Log in
+                </button>
+              ) : (
+                <form onSubmit={handleLogin} className="space-y-3 rounded-2xl border border-border bg-card p-4 text-left">
+                  <Label htmlFor="login-token" className="flex items-center gap-1.5">
+                    <KeyRound className="size-3.5" />
+                    Device token
+                  </Label>
+                  <Input
+                    id="login-token"
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    placeholder="paste the token from your Profile page"
+                    autoComplete="off"
+                    spellCheck={false}
+                    autoFocus
+                  />
+                  {loginError && <p className="text-sm text-destructive">{loginError}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    <Button type="button" variant="ghost" onClick={() => { setShowLogin(false); setLoginError(null); }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={loggingIn} className="rounded-full px-5">
+                      {loggingIn ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          Logging in…
+                        </>
+                      ) : (
+                        "Log in"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
         </div>
       </main>
     );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ExternalLink, GitFork, Loader2, RefreshCw, Star, User } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +34,8 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const { ready, state, coinBalance, level, updateProfileSettings,
-        deviceToken, linkDevice } = useBuddyStore();
+        deviceToken, linkDevice, logout } = useBuddyStore();
+  const navigate = useNavigate();
   const [tokenInput, setTokenInput] = useState("");
   const runSync = useServerFn(syncExternalProfile);
 
@@ -108,6 +109,12 @@ function ProfilePage() {
         level={level}
         avatarUrl={gh?.avatarUrl ?? null}
         activePage="profile"
+        deviceToken={deviceToken}
+        onLogout={() => {
+          logout();
+          toast.success("Logged out.");
+          void navigate({ to: "/" });
+        }}
       />
 
       <main className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6">
