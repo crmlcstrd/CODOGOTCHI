@@ -55,7 +55,8 @@ static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
 
 static const char* API_URL = "https://codogotchi-backend.codobackend.workers.dev/api/device/state";
-static const uint32_t POLL_MS = 10000;   // equip/buy/pet/celebrate on the website shows up within ~10 s (double-tap + hold = sync now)
+static const uint32_t POLL_MS = 2000;    // equip/buy/pet/celebrate on the website shows up within ~2 s (double-tap + hold = sync now)
+                                         // polls are cheap: we send If-None-Match and the worker answers 304 when nothing changed
 
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -407,6 +408,8 @@ static bool wifiUp() {
   return WiFi.status() == WL_CONNECTED;
 }
 
+static String etag;   // last ETag seen from /api/device/state (empty = ask for the full body)
+
 static bool fetchState() {
   if (!wifiUp()) { Serial.println("fetch: WiFi not connected"); return false; }
   WiFiClientSecure client;
@@ -414,14 +417,20 @@ static bool fetchState() {
   HTTPClient http;
   if (!http.begin(client, API_URL)) return false;
   http.setTimeout(15000);
+  const char* hdrs[] = {"ETag"};
+  http.collectHeaders(hdrs, 1);
   http.addHeader("Authorization", "Bearer " + prefs.getString("token", ""));
+  if (etag.length()) http.addHeader("If-None-Match", etag);
   int code = http.GET();
-  if (code != 200) { Serial.printf("fetch: HTTP %d\n", code); http.end(); return false; }
+  if (code == 304) { pet.lastSyncOkMs = millis(); http.end(); return true; }   // nothing changed since last poll
+  if (code != 200) { Serial.printf("fetch: HTTP %d\n", code); etag = ""; http.end(); return false; }
+  String tag = http.header("ETag");
   String body = http.getString();   // getString() copes with chunked responses (getStream() does not)
   http.end();
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, body);
-  if (err) { Serial.printf("fetch: bad JSON (%s): %s\n", err.c_str(), body.c_str()); return false; }
+  if (err) { Serial.printf("fetch: bad JSON (%s): %s\n", err.c_str(), body.c_str()); etag = ""; return false; }
+  etag = tag;
 
   pet.lastSyncOkMs = millis();
   uint32_t seq = doc["celebrate_seq"] | (uint32_t)pet.celebrateSeq;   // absent field must NOT reset to 0
@@ -451,9 +460,9 @@ static bool fetchState() {
   prefs.putUChar("level", pet.level);
   prefs.putUChar("eyes", pet.eyes); prefs.putUChar("mouth", pet.mouth);
   prefs.putUInt("seq", pet.celebrateSeq);
-  Serial.printf("fetch ok: mood=%u health=%u level=%u eyes=%u mouth=%u seq=%lu\n", (unsigned)pet.mood,
+  Serial.printf("fetch ok: mood=%u health=%u level=%u eyes=%u mouth=%u seq=%lu pet=%lu\n", (unsigned)pet.mood,
                 (unsigned)pet.health, (unsigned)pet.level, (unsigned)pet.eyes, (unsigned)pet.mouth,
-                (unsigned long)pet.celebrateSeq);
+                (unsigned long)pet.celebrateSeq, (unsigned long)pet.petSeq);
   return true;
 }
 

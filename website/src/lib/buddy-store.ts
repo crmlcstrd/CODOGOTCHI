@@ -268,6 +268,20 @@ export function useBuddyStore() {
     } catch (e) { toast.error((e as Error).message); }
   }, [refresh, state.equippedEyesId, state.equippedMouthId]);
 
+  // Pet / Celebrate buttons under the OLED preview -> the physical robot.
+  // The robot polls /api/device/state every ~2 s and reacts when pet_seq / celebrate_seq go up.
+  const petBuddy = useCallback(async (): Promise<void> => {
+    if (!getToken()) { toast.message("Link your robot's device token on Profile to pet the real robot."); return; }
+    try { await api("/api/pet", { method: "POST" }); }
+    catch (e) { toast.error((e as Error).message); }
+  }, []);
+
+  const celebrateBuddy = useCallback(async (): Promise<void> => {
+    if (!getToken()) { toast.message("Link your robot's device token on Profile first."); return; }
+    try { await api("/api/celebrate", { method: "POST" }); }
+    catch (e) { toast.error((e as Error).message); }
+  }, []);
+
   // Sign in on this browser with an existing device token. The token is only kept if the server accepts it.
   const login = useCallback(async (token: string) => {
     const t = token.trim();
@@ -312,6 +326,6 @@ export function useBuddyStore() {
   return {
     ready, state, earnedCoins, coinBalance, level, health, mood, deviceToken,
     completeOnboarding, updateProfileSettings, setProfileData, buyAccessory, toggleEquip,
-    syncNow, linkDevice, login, logout, refresh,
+    syncNow, linkDevice, login, logout, refresh, petBuddy, celebrateBuddy,
   };
 }

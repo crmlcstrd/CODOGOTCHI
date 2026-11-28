@@ -48,6 +48,7 @@ function ShopPage() {
     deviceToken,
     login,
     logout,
+    petBuddy, celebrateBuddy
   } = useBuddyStore();
 
   const [slotFilter, setSlotFilter] = useState<"all" | AccessorySlot>("all");
@@ -128,6 +129,8 @@ function ShopPage() {
             eyesAccessoryId={activeEyesId}
             mouthAccessoryId={activeMouthId}
             celebrateTick={celebrateTick}
+            onPet={petBuddy}
+            onCelebrate={celebrateBuddy}
           />
 
           {previewAccessory && (

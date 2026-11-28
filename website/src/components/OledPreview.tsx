@@ -40,6 +40,8 @@ interface OledModuleProps {
   mouthAccessoryId: string | null;
   celebrateTick?: number;
   compact?: boolean;
+  onPet?: () => void;        // send a pet to the physical robot
+  onCelebrate?: () => void;  // send a celebration to the physical robot
 }
 
 export function OledModule({
@@ -50,6 +52,8 @@ export function OledModule({
   mouthAccessoryId,
   celebrateTick = 0,
   compact = false,
+  onPet,
+  onCelebrate,
 }: OledModuleProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<OledFaceEngine | null>(null);
@@ -57,6 +61,16 @@ export function OledModule({
   const eyesRef = useRef(eyesAccessoryId);
   const mouthRef = useRef(mouthAccessoryId);
   const [touchActive, setTouchActive] = useState(false);
+
+  // Rate-limit the requests we send to the physical robot (preview animation is NOT limited)
+  const lastSentRef = useRef({ pet: 0, celebrate: 0 });
+  const sendToRobot = (kind: "pet" | "celebrate", fn?: () => void) => {
+    if (!fn) return;
+    const now = Date.now();
+    if (now - lastSentRef.current[kind] < 1200) return;
+    lastSentRef.current[kind] = now;
+    fn();
+  };
 
   eyesRef.current = eyesAccessoryId;
   mouthRef.current = mouthAccessoryId;
@@ -118,12 +132,14 @@ export function OledModule({
     setTouchActive(true);
     engineRef.current?.react("pet", performance.now());
     playPetChirp();
+    sendToRobot("pet", onPet);
     window.setTimeout(() => setTouchActive(false), 320);
   };
 
   const handleCelebrate = () => {
     engineRef.current?.react("celebrate", performance.now());
     playCelebrateChirp();
+    sendToRobot("celebrate", onCelebrate);
   };
 
   return (

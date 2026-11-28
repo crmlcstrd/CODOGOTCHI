@@ -23,7 +23,18 @@ function difficultyGain(S) { const r = S.filter(s => s.counted && s.rating > 0).
   return Math.max(0, Math.round(Math.max(ra - sa, (pk - sa) * 0.6))); }
 
 let db;
-const bump = (uid, n = 1) => db.rpc("bump_seq", { uid, n });
+// Increment celebrate_seq. Prefer the atomic SQL RPC; if it is missing/broken (older DB setup),
+// fall back to a direct read-modify-write so solves/pushes/celebrate STILL animate on the robot.
+async function bump(uid, n = 1) {
+  const { error } = await db.rpc("bump_seq", { uid, n });
+  if (!error) return;
+  console.error("bump_seq RPC failed, using fallback:", error.message);
+  const { data: st, error: e2 } = await db.from("buddy_state").select("celebrate_seq").eq("user_id", uid).single();
+  if (e2 || !st) { console.error("bump fallback read failed:", e2?.message); return; }
+  const { error: e3 } = await db.from("buddy_state")
+    .update({ celebrate_seq: Number(st.celebrate_seq ?? 0) + n }).eq("user_id", uid);
+  if (e3) console.error("bump fallback write failed:", e3.message);
+}
 
 async function metricsFor(u) {
   const now = Date.now(), tz = u.timezone || "UTC", today = dayKey(now, tz);
@@ -150,16 +161,18 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     const { pathname } = new URL(req.url);
     const auth = async () => {
-      const t = (req.headers.get("authorization") || "").replace(/^Bearer /, ""); if (!t) return null;
-      const { data: d } = await db.from("devices").select("id,user_id").eq("token_hash", sha(t)).maybeSingle(); if (!d) return null;
-      const { data: u } = await db.from("users").select("*").eq("id", d.user_id).single();
-      if (u) await db.from("devices").update({ last_seen_at: new Date().toISOString() }).eq("id", d.id);
-      return u;
+    const t = (req.headers.get("authorization") || "").replace(/^Bearer /, ""); if (!t) return null;
+    const { data: d } = await db.from("devices").select("id,user_id,last_seen_at").eq("token_hash", sha(t)).maybeSingle(); if (!d) return null;
+    const { data: u } = await db.from("users").select("*").eq("id", d.user_id).single();
+    // Device polls every ~2 s; heartbeat at most once a minute so we don't hammer the DB with writes.
+    if (u && (!d.last_seen_at || Date.now() - Date.parse(d.last_seen_at) > 60000))
+    await db.from("devices").update({ last_seen_at: new Date().toISOString() }).eq("id", d.id);
+    return u;
     };
     try {
       if (pathname === "/api/device/state") {
         const u = await auth(); if (!u) return json({ error: "unauthorized" }, 401);
-        await syncUser(u, env);          // ingest BEFORE answering → celebrate within ~30 s
+        ctx.waitUntil(syncUser(u, env)); // ingest in the background (throttled 25 s) so polls answer fast
         const m = await metricsFor(u);
         const body = JSON.stringify({ v: 1, mood: m.mood, health: m.health, level: m.level, eyes: m.eyes, mouth: m.mouth, celebrate_seq: m.celebrateSeq, pet_seq: m.petSeq, sleep: m.sleep });
         const tag = '"' + sha(body).slice(0, 16) + '"';
@@ -246,11 +259,11 @@ export default {
       if ((pathname === "/api/celebrate" || pathname === "/api/pet") && req.method === "POST") {
         const u = await auth(); if (!u) return json({ error: "unauthorized" }, 401);
         const kind = pathname === "/api/pet" ? "pet" : "celebrate", key = u.id + kind;
-        if (Date.now() - (lastReact.get(key) || 0) < 3000) return json({ ok: true, throttled: true });
+        if (Date.now() - (lastReact.get(key) || 0) < 1500) return json({ ok: true, throttled: true });
         lastReact.set(key, Date.now());
         if (kind === "celebrate") { await bump(u.id); return json({ ok: true }); }
         const { data: st, error } = await db.from("buddy_state").select("pet_seq").eq("user_id", u.id).single();
-        if (error || !st) return json({ error: "pet_seq column missing: run backend/migrations/001_pet_seq.sql in Supabase" }, 501);
+        if (error || !st) return json({ error: "Robot DB needs a one-time update: run backend/migrations/001_pet_seq.sql in the Supabase SQL editor, then pet again." }, 501);
         await db.from("buddy_state").update({ pet_seq: Number(st.pet_seq) + 1 }).eq("user_id", u.id);
         return json({ ok: true });
       }
