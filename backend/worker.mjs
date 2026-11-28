@@ -50,7 +50,14 @@ async function metricsFor(u) {
   const sleepNow = qs === qe ? false : qs > qe ? (h >= qs || h < qe) : (h >= qs && h < qe);
   return { earned, balance: Math.max(0, earned - st.spent_coins), level, levelProgress, totalXp, mood, health,
     todaySolves: tS.length, todayPushes: tP, celebrateSeq: Number(st.celebrate_seq),
-    eyes: st.equipped_eyes, mouth: st.equipped_mouth, sleep: sleepNow, st };
+    eyes: st.equipped_eyes, mouth: st.equipped_mouth, sleep: sleepNow, st,
+    coinsFromCf: s.reduce((a, x) => a + x.coins, 0),
+    coinsFromGithub: p.reduce((a, x) => a + x.coins, 0),
+    difficultyGain: gain,
+    todayWeightedScore: +score.toFixed(1),
+    newSolvesCount: s.filter(x => x.counted).length,
+    newGithubPushesCount: p.filter(x => x.counted).length,
+    spentCoins: st.spent_coins };
 }
 
 // ---- ledger writers (no daily cap; dedup is the anti-replay guard) ----
@@ -173,6 +180,11 @@ export default {
         const token = crypto.randomBytes(32).toString("base64url");
         const dv = await db.from("devices").insert({ user_id: u.id, token_hash: sha(token) });
         if (dv.error) return json({ step: "devices.insert", error: dv.error.message }, 500);
+        const { data: starters } = await db.from("accessory_catalog").select("id,slot").eq("is_starter", true);
+        if (starters?.length) await db.from("unlocks").upsert(starters.map(s => ({ user_id: u.id, accessory_id: s.id })), { onConflict: "user_id,accessory_id", ignoreDuplicates: true });
+        const sid = +b.starterId || 0;
+        const pick = starters?.find(s => s.id === sid);
+        if (pick) await db.from("buddy_state").update(pick.slot === 0 ? { equipped_eyes: sid } : { equipped_mouth: sid }).eq("user_id", u.id);
         ctx.waitUntil(backfillCF(u));
         return json({ userId: u.id, token });
       }
@@ -270,6 +282,12 @@ export default {
           usersTable: t.error ? t.error.message : "ok",
           catalogRows: c.error ? c.error.message : (c.data || []).length
         });
+      }
+      if (pathname === "/api/sync" && req.method === "POST") {
+        const u = await auth(); if (!u) return json({ error: "unauthorized" }, 401);
+        lastSync.delete(u.id);            // force ingest now for this user
+        await syncUser(u, env);
+        return json({ metrics: await metricsFor(u) });
       }
       return json({ error: "not found" }, 404);
     } catch (e) { return json({ error: String(e?.message || e) }, 500); }

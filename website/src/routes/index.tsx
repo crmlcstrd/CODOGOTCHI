@@ -44,6 +44,7 @@ function ShopPage() {
     setProfileData,
     buyAccessory,
     toggleEquip,
+    syncNow,          
   } = useBuddyStore();
 
   const [slotFilter, setSlotFilter] = useState<"all" | AccessorySlot>("all");
@@ -79,15 +80,11 @@ function ShopPage() {
     }
     setSyncing(true);
     try {
-      const res = await runSync({
-        data: {
-          codeforcesHandle: state.codeforcesHandle,
-          githubHandle: state.githubHandle,
-        },
-      });
-      setProfileData(res);
+      const metrics = await syncNow();                    // server ingest + economy
+      const res = await runSync({ data: { codeforcesHandle: state.codeforcesHandle, githubHandle: state.githubHandle } });
+      setProfileData(res);                                // charts only
       setCelebrateTick((n) => n + 1);
-      toast.success(`Synced! ${res.metrics.totalEarnedCoins.toLocaleString()} lifetime codocoins.`);
+      toast.success(`Synced! ${metrics.totalEarnedCoins.toLocaleString()} lifetime codocoins.`);
     } catch {
       toast.error("Sync failed — please try again in a moment.");
     } finally {
@@ -95,21 +92,12 @@ function ShopPage() {
     }
   };
 
-  const handlePurchase = (acc: Accessory) => {
-    if (level < acc.unlockLevel) {
-      toast.error(`Reach Level ${acc.unlockLevel} to unlock ${acc.name}.`);
-      return;
-    }
-    if (coinBalance < acc.price) {
-      toast.error(`Need ${acc.price - coinBalance} more codocoins for ${acc.name}.`);
-      return;
-    }
-    const ok = buyAccessory(acc.id, acc.price);
-    if (ok) {
-      setPreviewAccessory(null);
-      setCelebrateTick((n) => n + 1);
-      toast.success(`Equipped ${acc.name} on ${state.buddyName}!`);
-    }
+  const handlePurchase = async (acc: Accessory) => {
+    if (level < acc.unlockLevel) { toast.error(`Reach Level ${acc.unlockLevel} to unlock ${acc.name}.`); return; }
+    if (coinBalance < acc.price) { toast.error(`Need ${acc.price - coinBalance} more codocoins for ${acc.name}.`); return; }
+    const ok = await buyAccessory(acc.id, acc.price);
+    if (ok) { setPreviewAccessory(null); setCelebrateTick((n) => n + 1); toast.success(`Equipped ${acc.name} on ${state.buddyName}!`); }
+    else toast.error("Purchase failed — try again.");
   };
 
   return (
@@ -197,7 +185,7 @@ function ShopPage() {
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => equippedEyes && toggleEquip(equippedEyes.id)}
+                onClick={() => equippedEyes && void toggleEquip(equippedEyes.id)}
                 disabled={!equippedEyes}
                 className="flex items-center justify-between rounded-xl border border-border bg-background/70 px-3 py-2 text-left text-xs disabled:opacity-60"
               >
@@ -209,7 +197,7 @@ function ShopPage() {
               </button>
               <button
                 type="button"
-                onClick={() => equippedMouth && toggleEquip(equippedMouth.id)}
+                onClick={() => equippedMouth && void toggleEquip(equippedMouth.id)}
                 disabled={!equippedMouth}
                 className="flex items-center justify-between rounded-xl border border-border bg-background/70 px-3 py-2 text-left text-xs disabled:opacity-60"
               >
@@ -307,7 +295,7 @@ function ShopPage() {
                         type="button"
                         size="sm"
                         variant={equipped ? "secondary" : "default"}
-                        onClick={() => toggleEquip(acc.id)}
+                        onClick={() => void toggleEquip(acc.id)}
                         className="h-8 rounded-full px-3.5 text-xs"
                       >
                         {equipped ? (
@@ -329,7 +317,7 @@ function ShopPage() {
                         type="button"
                         size="sm"
                         disabled={!canAfford}
-                        onClick={() => handlePurchase(acc)}
+                        onClick={() => void handlePurchase(acc)}
                         className="h-8 rounded-full px-3.5 text-xs"
                       >
                         {canAfford ? "Buy" : "Need coins"}

@@ -33,7 +33,9 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { ready, state, coinBalance, level, updateProfileSettings } = useBuddyStore();
+  const { ready, state, coinBalance, level, updateProfileSettings,
+        deviceToken, linkDevice } = useBuddyStore();
+  const [tokenInput, setTokenInput] = useState("");
   const runSync = useServerFn(syncExternalProfile);
 
   const [userName, setUserName] = useState("");
@@ -76,7 +78,7 @@ function ProfilePage() {
             })
           : null;
 
-      updateProfileSettings({
+      await updateProfileSettings({
         userName: userName.trim(),
         buddyName: buddyName.trim(),
         codeforcesHandle: cfHandle.trim(),
@@ -223,6 +225,24 @@ function ProfilePage() {
                   maxLength={48}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-border/70 bg-background/70 p-4">
+              <Label htmlFor="device-token">Robot device token</Label>
+              <p className="text-xs text-muted-foreground">
+                Paste the token currently stored in your robot (Profile → setup portal) so the website controls that exact device.
+              </p>
+              <div className="flex gap-2">
+                <Input id="device-token" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)}
+                       placeholder={deviceToken ? "•••• linked ••••" : "paste device token"} />
+                <Button type="button" variant="outline" onClick={async () => {
+                  try { await linkDevice(tokenInput); toast.success("Robot linked."); setTokenInput(""); }
+                  catch { toast.error("Token not recognised."); }
+                }}>Link</Button>
+              </div>
+              {deviceToken && (
+                <p className="break-all font-mono text-[10px] text-muted-foreground">linked: {deviceToken}</p>
+              )}
             </div>
 
             {metrics && (
