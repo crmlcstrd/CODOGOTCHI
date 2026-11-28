@@ -49,7 +49,7 @@ async function metricsFor(u) {
   const h = localHour(tz), qs = u.quiet_start, qe = u.quiet_end;
   const sleepNow = qs === qe ? false : qs > qe ? (h >= qs || h < qe) : (h >= qs && h < qe);
   return { earned, balance: Math.max(0, earned - st.spent_coins), level, levelProgress, totalXp, mood, health,
-    todaySolves: tS.length, todayPushes: tP, celebrateSeq: Number(st.celebrate_seq),
+    todaySolves: tS.length, todayPushes: tP, celebrateSeq: Number(st.celebrate_seq), petSeq: Number(st.pet_seq ?? 0),
     eyes: st.equipped_eyes, mouth: st.equipped_mouth, sleep: sleepNow, st,
     coinsFromCf: s.reduce((a, x) => a + x.coins, 0),
     coinsFromGithub: p.reduce((a, x) => a + x.coins, 0),
@@ -126,6 +126,7 @@ async function tick(env) {
 }
 
 // Inline sync when the device polls (throttled; ledger dedup makes any overlap harmless)
+const lastReact = new Map();   // per user+kind throttle for website pet/celebrate (best effort, per isolate)
 const lastSync = new Map();
 async function syncUser(u, env) {
   const t = lastSync.get(u.id) || 0;
@@ -160,7 +161,7 @@ export default {
         const u = await auth(); if (!u) return json({ error: "unauthorized" }, 401);
         await syncUser(u, env);          // ingest BEFORE answering → celebrate within ~30 s
         const m = await metricsFor(u);
-        const body = JSON.stringify({ v: 1, mood: m.mood, health: m.health, level: m.level, eyes: m.eyes, mouth: m.mouth, celebrate_seq: m.celebrateSeq, sleep: m.sleep });
+        const body = JSON.stringify({ v: 1, mood: m.mood, health: m.health, level: m.level, eyes: m.eyes, mouth: m.mouth, celebrate_seq: m.celebrateSeq, pet_seq: m.petSeq, sleep: m.sleep });
         const tag = '"' + sha(body).slice(0, 16) + '"';
         if (req.headers.get("if-none-match") === tag) return new Response(null, { status: 304, headers: { ETag: tag, ...CORS } });
         return new Response(body, { headers: { "content-type": "application/json", ETag: tag, ...CORS } });
@@ -238,6 +239,19 @@ export default {
           await db.from("buddy_state").update({ [b.slot === "mouth" ? "equipped_mouth" : "equipped_eyes"]: 0 }).eq("user_id", u.id);
         }
         await bump(u.id);
+        return json({ ok: true });
+      }
+      // Website "Pet" / "Celebrate" buttons -> the robot. The device polls /api/device/state and reacts when
+      // celebrate_seq / pet_seq go up (celebrate reuses the same counter a real solve/push bumps).
+      if ((pathname === "/api/celebrate" || pathname === "/api/pet") && req.method === "POST") {
+        const u = await auth(); if (!u) return json({ error: "unauthorized" }, 401);
+        const kind = pathname === "/api/pet" ? "pet" : "celebrate", key = u.id + kind;
+        if (Date.now() - (lastReact.get(key) || 0) < 3000) return json({ ok: true, throttled: true });
+        lastReact.set(key, Date.now());
+        if (kind === "celebrate") { await bump(u.id); return json({ ok: true }); }
+        const { data: st, error } = await db.from("buddy_state").select("pet_seq").eq("user_id", u.id).single();
+        if (error || !st) return json({ error: "pet_seq column missing: run backend/migrations/001_pet_seq.sql in Supabase" }, 501);
+        await db.from("buddy_state").update({ pet_seq: Number(st.pet_seq) + 1 }).eq("user_id", u.id);
         return json({ ok: true });
       }
       if (pathname === "/api/dev/grant" && req.method === "POST") {

@@ -15,6 +15,9 @@ struct PetState {
   volatile bool     sleepNow = false;
   volatile bool     syncRequested = false;
   volatile bool     celebratePending = false;
+  volatile uint32_t petSeq = 0;          // website "Pet" counter (not persisted: first fetch after boot just sets the baseline)
+  volatile bool     petSeqKnown = false;
+  volatile bool     petPending = false;
   volatile bool     levelUpPending = false; // Renamed from ageUpPending
   volatile uint32_t lastSyncOkMs = 0;
   volatile uint32_t demoUntil = 0;    

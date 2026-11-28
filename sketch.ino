@@ -55,7 +55,7 @@ static const uint32_t MULTI_GAP_MS = 380;
 static const uint32_t HOLD_MS      = 650;
 
 static const char* API_URL = "https://codogotchi-backend.codobackend.workers.dev/api/device/state";
-static const uint32_t POLL_MS = 30000;   // equip/buy on the website shows up within ~30 s (double-tap + hold = sync now)
+static const uint32_t POLL_MS = 10000;   // equip/buy/pet/celebrate on the website shows up within ~10 s (double-tap + hold = sync now)
 
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -427,6 +427,9 @@ static bool fetchState() {
   uint32_t seq = doc["celebrate_seq"] | (uint32_t)pet.celebrateSeq;   // absent field must NOT reset to 0
   if (seq > pet.celebrateSeq) pet.celebratePending = true;
   pet.celebrateSeq = seq;
+  uint32_t pseq = doc["pet_seq"] | (uint32_t)pet.petSeq;                   // absent field = no change
+  if (pet.petSeqKnown && pseq > pet.petSeq) pet.petPending = true;         // "Pet" pressed on the website
+  pet.petSeq = pseq; pet.petSeqKnown = true;                               // first fetch after boot = silent baseline
   const bool demo = millis() < pet.demoUntil;   // demo overrides vitals ONLY, never cosmetics/seq
   if (!demo) {
     pet.mood   = constrain((int)(doc["mood"]   | (int)pet.mood),   0, 3);
@@ -572,6 +575,11 @@ static void housekeeping(uint32_t now) {
   } else if (!sleeping && pet.celebratePending) {
     pet.celebratePending = false;
     startRx(RX_CELEBRATE, 2800); playSound(SND_CELEBRATE);
+  }
+
+  if (pet.petPending) {                               // pet from the website: show it, but never cut a celebration short
+    pet.petPending = false;
+    if (!sleeping && rx != RX_CELEBRATE) { startRx(RX_PET, 2100); playSound(SND_HAPPY); }
   }
 
   if (prevMood != 255 && pet.mood != prevMood && !sleeping) playSound(pet.mood > prevMood ? SND_HAPPY : SND_SAD);
