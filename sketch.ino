@@ -1,10 +1,11 @@
 /*
- * CODOGOTCHI - ESP32 firmware skeleton (untested on hardware: expect to tune touch thresholds)
+ * CODOGOTCHI - ESP32 firmware
  *
  * Hardware : ESP32 + 1.3" SH1106 128x64 I2C OLED + passive buzzer + TTP223 touch module
  *   Wiring : OLED  VCC->3V3, GND->GND, SDA->GPIO21, SCL->GPIO22
  *            Buzzer (passive) + -> GPIO25, - -> GND
- *            TTP223 VCC->3V3, GND->GND, OUT->GPIO4 (active-HIGH output).
+ *            TTP223 VCC->3V3, GND->GND, OUT->GPIO4 (active-HIGH, default momentary mode: leave the A/B
+ *            solder jumpers open; no threshold tuning needed, unlike a bare copper strip).
  *            Nothing else should drive GPIO4.
  * Libraries: Adafruit SH110X (for the SH1106 OLED), Adafruit GFX, ArduinoJson 7.x
  *            (WiFi, HTTPClient, WebServer, Preferences ship with the ESP32 Arduino core; 2.x and 3.x both work)
@@ -45,7 +46,7 @@
 #define PIN_SCL     22
 #define PIN_BUZZER  25          // PASSIVE buzzer (an active one can only beep one tone)
 
-// Touch pins, ordered LEFT -> RIGHT. One pin = single copper strip.
+// Touch pins, ordered LEFT -> RIGHT. One pin = one TTP223 module (OUT pin, active-HIGH).
 static const uint8_t TOUCH_PINS[] = {4};
 constexpr uint8_t NSEG = sizeof(TOUCH_PINS) / sizeof(TOUCH_PINS[0]);
 
@@ -130,7 +131,7 @@ static void touchCalibrate() {
   for (uint8_t i = 0; i < NSEG; i++) {
     segs[i].pin = TOUCH_PINS[i];
 
-    pinMode(segs[i].pin, INPUT);
+    pinMode(segs[i].pin, INPUT_PULLDOWN);   // TTP223 drives the pin itself; pulldown only stops a loose wire from floating
 
     segs[i].base = 0;
     segs[i].last = 0;
@@ -423,7 +424,7 @@ static bool fetchState() {
   if (err) { Serial.printf("fetch: bad JSON (%s): %s\n", err.c_str(), body.c_str()); return false; }
 
   pet.lastSyncOkMs = millis();
-  uint32_t seq = doc["celebrate_seq"] | pet.celebrateSeq;   // absent field must NOT reset to 0
+  uint32_t seq = doc["celebrate_seq"] | (uint32_t)pet.celebrateSeq;   // absent field must NOT reset to 0
   if (seq > pet.celebrateSeq) pet.celebratePending = true;
   pet.celebrateSeq = seq;
   const bool demo = millis() < pet.demoUntil;   // demo overrides vitals ONLY, never cosmetics/seq
@@ -435,9 +436,6 @@ static bool fetchState() {
     pet.level  = constrain(level, 0, 50);
   }
 
-  pet.mood = constrain(mood, 0, 3);
-  pet.health = constrain(health, 0, 100);
-  pet.level = constrain(level, 0, 50); // Capped at 50
   int e = doc["eyes"]  | (int)pet.eyes;
   int m = doc["mouth"] | (int)pet.mouth;
   if (e < 0 || e > 255 || accessorySlot((uint8_t)e) != 0) e = 0;   // wrong slot or junk -> nothing
@@ -512,11 +510,11 @@ static void runSetupPortal() {
 
 static bool setupWindowHeld() {
   uint32_t t0 = millis(), heldSince = 0;
-  while (millis() - t0 < 5000) {   // 5 s window: start touching once the text appears, hold ~1.5 s
+  while (millis() - t0 < 5000) {   // 5 s window: start touching the pad once the text appears, hold ~1.5 s
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(14, 28);
-    display.print("hold strip = setup");
+    display.print("hold pad = setup");
     display.display();
     bool any = false;
     for (uint8_t i = 0; i < NSEG; i++) if (segTouched(segs[i])) any = true;

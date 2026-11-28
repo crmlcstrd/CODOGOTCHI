@@ -36,7 +36,7 @@
     [ "bz1:1", "esp:GND.2", "black", [] ],
     [ "bz1:2", "esp:25", "orange", [] ],
     [ "btn1:1.l", "esp:4", "purple", [] ],
-    [ "btn1:2.l", "esp:GND.2", "black", [] ]
+    [ "btn1:2.l", "esp:3V3", "red", [] ]
   ],
   "dependencies": {}
 }

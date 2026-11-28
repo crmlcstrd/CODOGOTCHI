@@ -1,7 +1,18 @@
 # CODOGOTCHI
 Tamagotchi style desk buddy for competitive programming and Github :)
 
-hi c: to run this in wokwi, youll need an esp32 board (just the standard one) then, from the little '+' icon near the circuit board, get an ssd1306 oled display, and a pushbutton (which, for now, acts as our touch sensor), and a passive piezo buzzer. open the libraries tab (should be besides files), and add adafruit ssd1306, adafruit gfx, and arduinojson. paste the diagram.json and sketch.ino and make a new file for face.h, and types.h get ur build up and running, and use the following commands in the terminal: 
+## Hardware (final build)
+
+| Part | Pin on ESP32 |
+| --- | --- |
+| 1.3" SH1106 128x64 I2C OLED | VCC 3V3, GND GND, SDA GPIO21, SCL GPIO22 (I2C address 0x3C) |
+| TTP223 capacitive touch module | VCC 3V3, GND GND, OUT GPIO4 (active-HIGH, momentary mode, leave the A/B jumpers open) |
+| Passive piezo buzzer | + GPIO25, - GND |
+
+Arduino libraries: Adafruit SH110X, Adafruit GFX, ArduinoJson 7.x. The 1.3" OLED is an SH1106, not an SSD1306, so don't use the SSD1306 library.
+Touch gestures: tap = poke, double tap = status, triple tap = mute, spam = annoyed, hold = pet, double tap + hold = sync now.
+
+hi c: to run this in wokwi, youll need an esp32 board (just the standard one) then, from the little '+' icon near the circuit board, get an ssd1306 oled display (just a stand-in for the sh1106 in the sim), and a pushbutton (acts as our ttp223: wired from 3V3 to GPIO4), and a passive piezo buzzer. open the libraries tab (should be besides files), and add adafruit sh110x, adafruit gfx, and arduinojson. paste the diagram.json and sketch.ino and make a new file for face.h, and types.h get ur build up and running, and use the following commands in the terminal: 
 
 HEALTH: h0 - h100
 MOOD: m0 - m3
@@ -21,3 +32,4 @@ priy here!!! :D
 update 1: the website currently has a login screen, asking for your + codo's name, connecting cf + gh, starts at level 0 + 0 codocoins, uses scoring metric (check src/lib/scoring for metric), and the items are fully unlockable! i do think we need a log out button tho lmao
 ill probably first make the changes in the other repo and then check here :D
 update 2: uncringed accessory decs, couple of visual tweaks here and there, along with desc changes. still no log out tho c: i might js lowk keep it that way. also DHRUV
+update 3: uncringed some bugs, added logout yayayay!!! 
