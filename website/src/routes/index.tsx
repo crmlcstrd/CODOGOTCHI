@@ -135,14 +135,6 @@ function ShopPage() {
               <span>
                 Previewing <strong className="text-primary">{previewAccessory.name}</strong>
               </span>
-              <button
-                type="button"
-                onClick={() => setPreviewAccessory(null)}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Clear preview"
-              >
-                <X className="size-3.5" />
-              </button>
             </div>
           )}
 
